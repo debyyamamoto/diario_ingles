@@ -32,10 +32,20 @@
     "files": [
       "dist/**/*",
       "main.js",
-      "preload.js"
+      "preload.js",
+      "assets/**/*"
     ],
     "directories": {
       "output": "release"
+    },
+    "win": {
+      "icon": "assets/icon.ico"
+    },
+    "mac": {
+      "icon": "assets/icon.png"
+    },
+    "linux": {
+      "icon": "assets/icon.png"
     }
   }
 }

@@ -4,17 +4,7 @@
 // diferente conforme a categoria (gramática, vocabulário, etc).
 // ============================================================
 
-const CORES_POR_CATEGORIA = {
-  'gramática': '#e03131',
-  'vocabulário': '#1971c2',
-  'tempo verbal': '#f08c00',
-  'preposição': '#7048e8',
-  'artigo': '#2f9e44',
-  'pontuação': '#868e96'
-}
-
-// cor padrão caso a IA devolva uma categoria fora dessa lista
-const COR_PADRAO = '#495057'
+import { CORES_POR_CATEGORIA, COR_PADRAO } from '../categoryColors.js'
 
 export default function ErrorList({ errors }) {
   if (!errors || errors.length === 0) {

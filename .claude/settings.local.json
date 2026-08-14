@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(wsl.exe -e bash -lc \"cd /home/dyamamoto/projects/diario_ingles && npm run dev\")"
+    ]
+  }
+}
