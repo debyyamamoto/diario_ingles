@@ -17,8 +17,8 @@ export default function ErrorList({ errors }) {
         const cor = CORES_POR_CATEGORIA[error.category] || COR_PADRAO
 
         return (
-          <li key={i} style={{ borderLeft: `4px solid ${cor}` }}>
-            <span className="category-badge" style={{ backgroundColor: cor }}>
+          <li key={i} style={{ borderLeft: `4px solid ${cor.deep}` }}>
+            <span className="category-badge" style={{ backgroundColor: cor.soft }}>
               {error.category}
             </span>
 

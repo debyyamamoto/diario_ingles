@@ -10,5 +10,14 @@ const { contextBridge, ipcRenderer } = require('electron')
 contextBridge.exposeInMainWorld('electronAPI', {
   correctText: (text) => ipcRenderer.invoke('diary:correct', text),
   saveEntry: (entry) => ipcRenderer.invoke('diary:save', entry),
-  listEntries: () => ipcRenderer.invoke('diary:list')
+  listEntries: () => ipcRenderer.invoke('diary:list'),
+  getApiKey: () => ipcRenderer.invoke('settings:getApiKey'),
+  saveApiKey: (apiKey) => ipcRenderer.invoke('settings:saveApiKey', apiKey),
+  // Disparado pelo main process ao fechar a janela pelo X (não ao minimizar
+  // manualmente). Devolve uma função pra remover o listener no cleanup do effect.
+  onResetRequest: (callback) => {
+    const handler = () => callback()
+    ipcRenderer.on('app:reset-editor', handler)
+    return () => ipcRenderer.removeListener('app:reset-editor', handler)
+  }
 })

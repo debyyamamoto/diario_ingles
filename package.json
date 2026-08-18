@@ -9,12 +9,14 @@
     "dev": "concurrently -k \"npm run dev:vite\" \"npm run dev:electron\"",
     "build": "vite build",
     "start": "cross-env NODE_ENV=production electron .",
-    "dist": "npm run build && electron-builder"
+    "dist": "npm run build && electron-builder",
+    "test": "vitest run"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "better-sqlite3": "^11.3.0",
-    "dotenv": "^16.4.5"
+    "electron-store": "^8.2.0",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.1",
@@ -25,6 +27,7 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "vite": "^5.4.1",
+    "vitest": "^2.1.1",
     "wait-on": "^7.2.0"
   },
   "build": {
@@ -33,7 +36,10 @@
       "dist/**/*",
       "main.js",
       "preload.js",
-      "assets/**/*"
+      "config.js",
+      "correctionParser.js",
+      "assets/**/*",
+      "database/**/*"
     ],
     "directories": {
       "output": "release"

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { CORES_POR_CATEGORIA, COR_PADRAO } from '../categoryColors.js'
 import { DICAS_POR_CATEGORIA, DICA_PADRAO } from '../studyTips.js'
 
@@ -10,7 +10,7 @@ import { DICAS_POR_CATEGORIA, DICA_PADRAO } from '../studyTips.js'
 // com base na categoria mais frequente.
 // ============================================================
 
-function buildInsights(entries) {
+export function buildInsights(entries) {
   const totalEntradas = entries.length
   const todosErros = entries.flatMap((entrada) => entrada.errors || [])
   const totalErros = todosErros.length
@@ -59,6 +59,156 @@ function buildInsights(entries) {
   }
 }
 
+// ============================================================
+// Barrinha de frequência — heatmap de dias com entrada, últimos ~6 meses.
+// Elemento de assinatura do redesign: o resto da UI fica quieto ao redor
+// dele. Inspirado no gráfico de contribuições do GitHub, mas com
+// intensidade baseada em quantidade de entradas/palavras do dia, não commits.
+// ============================================================
+
+const HEATMAP_SEMANAS = 26
+const DIAS_SEMANA_LABEL = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb']
+const MESES_LABEL = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
+
+function startOfDay(date) {
+  const d = new Date(date)
+  d.setHours(0, 0, 0, 0)
+  return d
+}
+
+function toDateKey(date) {
+  const d = startOfDay(date)
+  const ano = d.getFullYear()
+  const mes = String(d.getMonth() + 1).padStart(2, '0')
+  const dia = String(d.getDate()).padStart(2, '0')
+  return `${ano}-${mes}-${dia}`
+}
+
+function contarPalavras(texto) {
+  return texto?.trim() ? texto.trim().split(/\s+/).length : 0
+}
+
+function nivelDeIntensidade(entradas, palavras) {
+  if (entradas === 0) return 0
+  if (entradas >= 3 || palavras >= 300) return 4
+  if (entradas === 2 || palavras >= 150) return 3
+  if (palavras >= 60) return 2
+  return 1
+}
+
+// Monta uma matriz de semanas × dias (colunas × 7 linhas), alinhada em
+// semanas completas (domingo a sábado) terminando hoje. Dias futuros na
+// última semana viram `null` (célula vazia, não renderiza).
+export function buildHeatmap(entries, { semanas = HEATMAP_SEMANAS, hoje = new Date() } = {}) {
+  const porDia = {}
+  for (const entrada of entries) {
+    if (!entrada.created_at) continue
+    const chave = toDateKey(entrada.created_at)
+    if (!porDia[chave]) porDia[chave] = { entradas: 0, palavras: 0 }
+    porDia[chave].entradas += 1
+    porDia[chave].palavras += contarPalavras(entrada.text)
+  }
+
+  const fim = startOfDay(hoje)
+  const inicio = new Date(fim)
+  inicio.setDate(inicio.getDate() - fim.getDay() - (semanas - 1) * 7)
+
+  const colunas = []
+  for (let semana = 0; semana < semanas; semana++) {
+    const dias = []
+    for (let diaSemana = 0; diaSemana < 7; diaSemana++) {
+      const data = new Date(inicio)
+      data.setDate(data.getDate() + semana * 7 + diaSemana)
+
+      if (data > fim) {
+        dias.push(null)
+        continue
+      }
+
+      const chave = toDateKey(data)
+      const info = porDia[chave] || { entradas: 0, palavras: 0 }
+      dias.push({
+        data: chave,
+        mes: data.getMonth(),
+        entradas: info.entradas,
+        palavras: info.palavras,
+        nivel: nivelDeIntensidade(info.entradas, info.palavras)
+      })
+    }
+    colunas.push(dias)
+  }
+
+  return colunas
+}
+
+// Um rótulo por coluna: só marca a primeira coluna de cada mês novo.
+function rotulosDosMeses(colunas) {
+  let mesAnterior = null
+  return colunas.map((dias) => {
+    const primeiroDiaValido = dias.find(Boolean)
+    if (!primeiroDiaValido || primeiroDiaValido.mes === mesAnterior) return ''
+    mesAnterior = primeiroDiaValido.mes
+    return MESES_LABEL[primeiroDiaValido.mes]
+  })
+}
+
+function FrequencyHeatmap({ entries }) {
+  const colunas = useMemo(() => buildHeatmap(entries), [entries])
+  const rotulosMeses = useMemo(() => rotulosDosMeses(colunas), [colunas])
+  const diasComEntrada = useMemo(
+    () => colunas.flat().filter((dia) => dia && dia.entradas > 0).length,
+    [colunas]
+  )
+
+  return (
+    <div className="heatmap-card">
+      <p className="visually-hidden">
+        Mapa de frequência de escrita nas últimas {HEATMAP_SEMANAS} semanas: {diasComEntrada} dias com pelo menos
+        uma entrada.
+      </p>
+
+      <div className="heatmap-months" aria-hidden="true">
+        {rotulosMeses.map((mes, i) => (
+          <span key={i}>{mes}</span>
+        ))}
+      </div>
+
+      <div className="heatmap-body">
+        <div className="heatmap-weekday-labels" aria-hidden="true">
+          {DIAS_SEMANA_LABEL.map((label, i) => (
+            <span key={label}>{i % 2 === 1 ? label : ''}</span>
+          ))}
+        </div>
+
+        <div className="heatmap-grid" aria-hidden="true">
+          {colunas.map((dias, semana) =>
+            dias.map((dia, diaSemana) =>
+              dia ? (
+                <div
+                  key={`${semana}-${diaSemana}`}
+                  className="heatmap-cell"
+                  data-level={dia.nivel}
+                  title={`${dia.data} — ${dia.entradas} entrada${dia.entradas === 1 ? '' : 's'}, ${dia.palavras} palavra${dia.palavras === 1 ? '' : 's'}`}
+                />
+              ) : (
+                <div key={`${semana}-${diaSemana}`} className="heatmap-cell is-empty" />
+              )
+            )
+          )}
+        </div>
+      </div>
+
+      <div className="heatmap-legend" aria-hidden="true">
+        <span>menos</span>
+        {[0, 1, 2, 3, 4].map((nivel) => (
+          <span key={nivel} className="heatmap-legend-swatch" data-level={nivel} />
+        ))}
+        <span>mais</span>
+      </div>
+    </div>
+  )
+}
+
 export default function Metrics() {
   const [entries, setEntries] = useState(null)
 
@@ -94,6 +244,9 @@ export default function Metrics() {
         </div>
       </div>
 
+      <h2>Sua frequência de escrita</h2>
+      <FrequencyHeatmap entries={entries} />
+
       {insights.tendencia && (
         <div className={`trend-card ${insights.tendencia.mediaRecente > insights.tendencia.mediaAntiga ? 'trend-warn' : 'trend-good'}`}>
           {insights.tendencia.mediaRecente < insights.tendencia.mediaAntiga
@@ -114,7 +267,7 @@ export default function Metrics() {
                 className="category-bar-fill"
                 style={{
                   width: `${(count / maiorFrequencia) * 100}%`,
-                  backgroundColor: CORES_POR_CATEGORIA[categoria] || COR_PADRAO
+                  backgroundColor: (CORES_POR_CATEGORIA[categoria] || COR_PADRAO).deep
                 }}
               />
             </div>
@@ -130,8 +283,8 @@ export default function Metrics() {
             {insights.errosRecorrentes.map((erro, i) => {
               const cor = CORES_POR_CATEGORIA[erro.category] || COR_PADRAO
               return (
-                <li key={i} style={{ borderLeft: `4px solid ${cor}` }}>
-                  <span className="category-badge" style={{ backgroundColor: cor }}>
+                <li key={i} style={{ borderLeft: `4px solid ${cor.deep}` }}>
+                  <span className="category-badge" style={{ backgroundColor: cor.soft }}>
                     {erro.category} · {erro.count}x
                   </span>
                   <div className="error-diff">
