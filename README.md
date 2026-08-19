@@ -5,6 +5,28 @@
 App desktop (Electron + React) para escrever um diário em inglês e receber
 correções de gramática e vocabulário via API do Google Gemini (versão gratuita).
 
+## Capturas de tela
+
+<p align="center">
+  <img src="figures/tela_inicial.png" alt="Tela inicial do Diário em Inglês, com o editor de texto vazio" width="700">
+  <br><em>Tela inicial — editor de texto pronto pra escrever</em>
+</p>
+
+<p align="center">
+  <img src="figures/Exemplo%20de%20Resposta.png" alt="Exemplo de correção: diff do texto original riscado ao lado da correção, com explicação do erro" width="700">
+  <br><em>Correção da IA — diff visual e explicação de cada erro</em>
+</p>
+
+<p align="center">
+  <img src="figures/Metricas.png" alt="Aba de Métricas com estatísticas, heatmap de frequência de escrita e erros mais comuns por categoria" width="700">
+  <br><em>Aba de Métricas — heatmap de frequência, erros por categoria e sugestão de estudo</em>
+</p>
+
+<p align="center">
+  <img src="figures/Como%20fica%20na%20barra%20de%20tarefas.png" alt="Ícone do app na bandeja do sistema, ao lado dos outros ícones da barra de tarefas" width="500">
+  <br><em>Ícone na bandeja — o app fica disponível em segundo plano</em>
+</p>
+
 ## O que já funciona
 - Editor de texto simples, com correção via IA em um clique
 - Diff visual (trecho original riscado ao lado da correção)
